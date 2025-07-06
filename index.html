@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Emoji GIF Creator</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #controls { position: absolute; top: 10px; left: 10px; z-index: 10; }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <button id="exportBtn">🎬 Export GIF</button>
+    <a id="downloadLink" style="display:none;">Download</a>
+    <img id="gifPreview" style="display:none; max-width: 256px; border: 1px solid #ccc;" />
+  </div>
+  <canvas id="renderCanvas"></canvas>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
