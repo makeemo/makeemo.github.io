@@ -7,7 +7,7 @@ const engine = new Engine(canvas, true);
 const scene = new Scene(engine);
 
 // Basic camera and light
-const camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 3, 5, Vector3.Zero(), scene);
+const camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 3, 2, Vector3.Zero(), scene);
 camera.attachControl(canvas, true);
 new HemisphericLight("light", new Vector3(0, 1, 0), scene);
 
