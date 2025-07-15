@@ -16,23 +16,36 @@ export class EmojiAnimator {
   private headMesh!: Mesh;
   private leftEye!: Mesh;
   private rightEye!: Mesh;
+  private _baseRadius = 0.3;
+  private _widthRatio = 1;
+  private _heightRatio = 1;
 
   private _originalPositions: number[] | Float32Array = new Float32Array();
   //private _mouthTarget!: MorphTarget;
   private _mouthMesh!: Mesh;
 
-  public setMouthSize(radius: number, innerDepth = 0.06): void {
+  public setMouthSize(radiusX: number, radiusY: number, innerDepth = 0.06): void {
     const basePos = this._originalPositions;
     const pos = this._mouthMesh.getVerticesData("position")!;
     const center = new Vector3(0, 0, 0.5);
-    const innerRadius = radius * 0.6;
-    const outerRadius = radius / 0.6;
     const sphereRadius = 0.5;
 
     for (let i = 0; i < basePos.length; i += 3) {
       const vx = basePos[i];
       const vy = basePos[i + 1];
       const vz = basePos[i + 2];
+
+      const angle = Math.atan2(vx, vy);
+
+      // Local elliptical radius at this angle
+      const ellipseRadius = Math.sqrt(
+        (radiusX * radiusX * Math.sin(angle) ** 2) +
+        (radiusY * radiusY * Math.cos(angle) ** 2)
+      );
+
+      // Inner and outer based on local ellipse
+      const innerRadius = ellipseRadius * 0.6;
+      const outerRadius = ellipseRadius / 0.6;
 
       const v = new Vector3(vx, vy, vz);
       const toCenter = v.subtract(center);
@@ -41,19 +54,18 @@ export class EmojiAnimator {
       if (dist < outerRadius) {
         const angle = Math.atan2(toCenter.y, toCenter.x);
 
-        // Clean circular projection (ONLY for inner/mid zone)
-        const px = center.x + innerRadius * Math.cos(angle);
-        const py = center.y + innerRadius * Math.sin(angle);
+        // Elliptical projection (not circle)
+        const px = center.x + radiusX * Math.cos(angle);
+        const py = center.y + radiusY * Math.sin(angle);
         const pz = Math.sqrt(Math.max(0, sphereRadius * sphereRadius - px * px - py * py));
-        const circlePoint = new Vector3(px, py, pz);
+        const ellipsePoint = new Vector3(px, py, pz);
 
         let final = v;
 
-        if (dist < radius) {
-          // Apply inward deformation using circlePoint as anchor
-          const t = (radius - dist) / (radius - innerRadius); // 0 → 1
-          const inward = v.normalize().scale(-innerDepth * t * t); // optional easing
-          final = circlePoint.add(inward);
+        if (dist < ellipseRadius) {
+          const t = (ellipseRadius - dist) / (ellipseRadius - innerRadius);
+          const depth = innerDepth * t * t;
+          final = ellipsePoint.add(v.normalize().scale(-depth));
         }
 
         pos[i] = final.x;
@@ -64,7 +76,6 @@ export class EmojiAnimator {
 
     this._mouthMesh.setVerticesData("position", pos);
     this._mouthMesh.refreshBoundingInfo();
-    //this._mouthTarget.setPositions(this._mouthMesh.getVerticesData("position")!);
   }
 
   constructor(private scene: Scene) {}
@@ -198,34 +209,56 @@ export class EmojiAnimator {
     return frames;
   }
 
+  public updateMouth(): void {
+    const radiusX = this._baseRadius * this._widthRatio;
+    const radiusY = this._baseRadius * this._heightRatio;
+    this.setMouthSize(radiusX, radiusY);
+  }
+
   public createUI(): void {
     const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
     const panel = new StackPanel();
-    panel.width = "220px";
+    panel.width = "240px";
+    panel.top = "10px";
+    panel.left = "10px";
+    panel.paddingTop = "10px";
     panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+    panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
     ui.addControl(panel);
 
-    const label = new TextBlock();
-    label.text = "Mouth Radius: 0.30";
-    label.height = "30px";
-    label.color = "white";
-    panel.addControl(label);
+    const createSlider = (
+      labelText: string,
+      min: number,
+      max: number,
+      initial: number,
+      onChange: (value: number) => void
+    ) => {
+      const label = new TextBlock();
+      label.text = `${labelText}: ${initial.toFixed(2)}`;
+      label.height = "24px";
+      label.color = "white";
+      panel.addControl(label);
 
-    const slider = new Slider();
-    slider.minimum = 0;
-    slider.maximum = 0.6;
-    slider.value = 0.3;
-    slider.height = "20px";
-    slider.width = "200px";
-    slider.color = "orange";
-    slider.background = "gray";
-    panel.addControl(slider);
+      const slider = new Slider();
+      slider.minimum = min;
+      slider.maximum = max;
+      slider.value = initial;
+      slider.height = "20px";
+      slider.width = "200px";
+      slider.color = "orange";
+      slider.background = "gray";
+      panel.addControl(slider);
 
-    slider.onValueChangedObservable.add(value => {
-      label.text = `Mouth Radius: ${value.toFixed(2)}`;
-      this.setMouthSize(value);
-    });
+      slider.onValueChangedObservable.add((value) => {
+        label.text = `${labelText}: ${value.toFixed(2)}`;
+        onChange(value);
+        this.updateMouth(); // Apply update
+      });
+    };
+
+    createSlider("Size", 0.1, 0.5, this._baseRadius, (v) => (this._baseRadius = v));
+    createSlider("Width Ratio", 0, 1, this._widthRatio, (v) => (this._widthRatio = v));
+    createSlider("Height Ratio", 0, 1, this._heightRatio, (v) => (this._heightRatio = v));
   }
 }
