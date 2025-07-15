@@ -13,7 +13,7 @@ new HemisphericLight("light", new Vector3(0, 1, 0), scene);
 
 // Emoji setup
 const animator = new EmojiAnimator(scene);
-animator.loadEmoji("smile"); // You can extend this
+animator.loadEmoji(); // You can extend this
 
 setupUI(animator, () => {
   // Not used now, but you can move the logic back into main if preferred
