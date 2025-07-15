@@ -26,9 +26,22 @@ export class EmojiAnimator {
     yellowMat.diffuseColor = Color3.Yellow();
     this.headMesh.material = yellowMat;
 
+    // Create morph target for "O" mouth
+    const mouthMesh = this.headMesh.clone("mouthShape", null)!;
+    mouthMesh.setEnabled(false);
+
+    const pos = mouthMesh.getVerticesData("position")!;
+    const basePos = this.headMesh.getVerticesData("position")!;
+    const center = new Vector3(0, 0, 0.5);
+    const radius = 0.5;
+    const innerRadius = radius * 0.6;
+    const outerRadius = radius / 0.6;
+    const innerDepth = 0.04;
+    const sphereRadius = 0.5;
+
     // === BLACK SPHERE (MOUTH) ===
     const mouthSphere = MeshBuilder.CreateSphere("mouthSphere", {
-      diameter: 0.9, // slightly smaller than head
+      diameter: 1 - innerDepth, // slightly smaller than head
       segments: 32,
     }, this.scene);
 
@@ -36,17 +49,6 @@ export class EmojiAnimator {
     blackMat.diffuseColor = Color3.Black();
     mouthSphere.material = blackMat;
     mouthSphere.parent = this.headMesh; // optionally attach to head for sync
-
-    // Create morph target for "O" mouth
-    const mouthMesh = this.headMesh.clone("mouthShape", null)!;
-    mouthMesh.setEnabled(false);
-
-    const pos = mouthMesh.getVerticesData("position")!;
-    const basePos = this.headMesh.getVerticesData("position")!;
-    const center = new Vector3(0, 0, 0.5); // front-center mouth
-    const radius = 0.15;
-    const innerRadius = radius * 0.6;
-    const innerDepth = 0.1;
 
     for (let i = 0; i < pos.length; i += 3) {
       const vx = basePos[i];
@@ -57,20 +59,22 @@ export class EmojiAnimator {
       const toCenter = v.subtract(center);
       const dist = toCenter.length();
 
-      if (dist < radius) {
-        // 1. Project vertex to a circle on YZ plane (or XZ for smile)
+      if (dist < outerRadius) {
         const angle = Math.atan2(toCenter.y, toCenter.x);
-        const projected = new Vector3(
-          center.x + radius * Math.cos(angle),
-          center.y + radius * Math.sin(angle),
-          center.z
-        );
 
-        let final = projected
-        if (dist < innerRadius) {
-          // 2. Direction from original vertex *to center of sphere* (0,0,0)
-          const inwardDir = v.normalize().scale(-innerDepth);
-          final = projected.add(inwardDir); // move inward into emoji
+        // Clean circular projection (ONLY for inner/mid zone)
+        const px = center.x + innerRadius * Math.cos(angle);
+        const py = center.y + innerRadius * Math.sin(angle);
+        const pz = Math.sqrt(Math.max(0, sphereRadius * sphereRadius - px * px - py * py));
+        const circlePoint = new Vector3(px, py, pz);
+
+        let final = v;
+
+        if (dist < radius) {
+          // Apply inward deformation using circlePoint as anchor
+          const t = (radius - dist) / (radius - innerRadius); // 0 → 1
+          const inward = v.normalize().scale(-innerDepth * t * t); // optional easing
+          final = circlePoint.add(inward);
         }
 
         pos[i] = final.x;
@@ -96,10 +100,10 @@ export class EmojiAnimator {
 
     this.leftEye = baseEye;
     this.leftEye.name = "Eye_L";
-    this.leftEye.position = new Vector3(-0.2, 0.4, 0.2);
+    this.leftEye.position = new Vector3(-0.2, 0.3, 0.32);
 
     this.rightEye = baseEye.clone("Eye_R");
-    this.rightEye.position = new Vector3(0.2, 0.4, 0.2);
+    this.rightEye.position = new Vector3(0.2, 0.3, 0.32);
   }
 
   animateShapeKey(name: string, frameCount = 30): void {
