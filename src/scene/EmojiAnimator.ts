@@ -34,12 +34,18 @@ export class EmojiAnimator {
       const vy = basePos[i + 1];
       const vz = basePos[i + 2];
 
-      const angle = Math.atan2(vx, vy);
+      const angle = Math.atan2(vy, vx);
+
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+
+      const px = radiusX * Math.sign(cos) * (Math.abs(cos) ** rounding);
+      const py = radiusY * Math.sign(sin) * (Math.abs(sin) ** rounding) + sideCurve * (px * cos - radiusX / 2);
 
       // Local elliptical radius at this angle
       const ellipseRadius = Math.sqrt(
-        (radiusX * radiusX * Math.sin(angle) ** 2) +
-        (radiusY * radiusY * Math.cos(angle) ** 2)
+        (px ** 2) +
+        (py ** 2)
       );
 
       // Inner and outer based on local ellipse
@@ -51,14 +57,7 @@ export class EmojiAnimator {
       const dist = toCenter.length();
 
       if (dist < outerRadius) {
-        const angle = Math.atan2(toCenter.y, toCenter.x);
-
         // Elliptical projection (not circle)
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-
-        const px = center.x + radiusX * Math.sign(cos) * (Math.abs(cos) ** rounding);
-        const py = center.y + radiusY * Math.sign(sin) * (Math.abs(sin) ** rounding) + sideCurve * (px * cos - radiusX / 2);
         const pz = Math.sqrt(Math.max(0, sphereRadius * sphereRadius - px * px - py * py));
         const ellipsePoint = new Vector3(px, py, pz);
 
