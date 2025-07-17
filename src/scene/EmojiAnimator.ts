@@ -17,11 +17,12 @@ export class EmojiAnimator {
   private _widthRatio = 1;
   private _heightRatio = 1;
   private _rounding = 1;
+  private _sideCurve = 0;
 
   private _originalPositions: number[] | Float32Array = new Float32Array();
   private _mouthMesh!: Mesh;
 
-  public setMouthSize(radiusX: number, radiusY: number, rounding = 1): void {
+  public setMouthSize(radiusX: number, radiusY: number, rounding = 1, sideCurve = 0): void {
     const innerDepth = 0.06;
     const basePos = this._originalPositions;
     const pos = [...basePos];
@@ -57,7 +58,7 @@ export class EmojiAnimator {
         const sin = Math.sin(angle);
 
         const px = center.x + radiusX * Math.sign(cos) * (Math.abs(cos) ** rounding);
-        const py = center.y + radiusY * Math.sign(sin) * (Math.abs(sin) ** rounding);
+        const py = center.y + radiusY * Math.sign(sin) * (Math.abs(sin) ** rounding) + sideCurve * (px * cos - radiusX / 2);
         const pz = Math.sqrt(Math.max(0, sphereRadius * sphereRadius - px * px - py * py));
         const ellipsePoint = new Vector3(px, py, pz);
 
@@ -207,7 +208,7 @@ export class EmojiAnimator {
   public updateMouth(): void {
     const radiusX = this._baseRadius * this._widthRatio;
     const radiusY = this._baseRadius * this._heightRatio;
-    this.setMouthSize(radiusX, radiusY, this._rounding);
+    this.setMouthSize(radiusX, radiusY, this._rounding, this._sideCurve);
   }
 
   public createUI(): void {
@@ -255,5 +256,6 @@ export class EmojiAnimator {
     createSlider("Width Ratio", 0, 1, this._widthRatio, (v) => (this._widthRatio = v));
     createSlider("Height Ratio", 0, 1, this._heightRatio, (v) => (this._heightRatio = v));
     createSlider("Rounding", 0, 1, this._rounding, (v) => (this._rounding = v));
+    createSlider("Side Curve", -0.5, 0.5, this._sideCurve, (v) => (this._sideCurve = v));
   }
 }
