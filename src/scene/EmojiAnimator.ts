@@ -6,9 +6,6 @@ import {
   Color3,
   MeshBuilder,
   StandardMaterial,
-  MorphTarget,
-  MorphTargetManager,
-  Quaternion,
 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Control, Slider, StackPanel, TextBlock } from "@babylonjs/gui";
 
@@ -19,14 +16,15 @@ export class EmojiAnimator {
   private _baseRadius = 0.3;
   private _widthRatio = 1;
   private _heightRatio = 1;
+  private _rounding = 1;
 
   private _originalPositions: number[] | Float32Array = new Float32Array();
-  //private _mouthTarget!: MorphTarget;
   private _mouthMesh!: Mesh;
 
-  public setMouthSize(radiusX: number, radiusY: number, innerDepth = 0.06): void {
+  public setMouthSize(radiusX: number, radiusY: number, rounding = 1): void {
+    const innerDepth = 0.06;
     const basePos = this._originalPositions;
-    const pos = this._mouthMesh.getVerticesData("position")!;
+    const pos = [...basePos];
     const center = new Vector3(0, 0, 0.5);
     const sphereRadius = 0.5;
 
@@ -55,8 +53,11 @@ export class EmojiAnimator {
         const angle = Math.atan2(toCenter.y, toCenter.x);
 
         // Elliptical projection (not circle)
-        const px = center.x + radiusX * Math.cos(angle);
-        const py = center.y + radiusY * Math.sin(angle);
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+
+        const px = center.x + radiusX * Math.sign(cos) * (Math.abs(cos) ** rounding);
+        const py = center.y + radiusY * Math.sign(sin) * (Math.abs(sin) ** rounding);
         const pz = Math.sqrt(Math.max(0, sphereRadius * sphereRadius - px * px - py * py));
         const ellipsePoint = new Vector3(px, py, pz);
 
@@ -148,12 +149,6 @@ export class EmojiAnimator {
     }
     
     this._mouthMesh.setVerticesData("position", pos);
-    //this._mouthTarget = MorphTarget.FromMesh(this._mouthMesh, "MouthO", 0);
-    //const manager = new MorphTargetManager();
-    //manager.addTarget(this._mouthTarget);
-    //this.headMesh.morphTargetManager = manager;
-
-    //this.headMesh.rotation.x = 0.1 * Math.PI;
 
     // === EYES ===
     const eyeMat = new StandardMaterial("eyeMat", this.scene);
@@ -212,7 +207,7 @@ export class EmojiAnimator {
   public updateMouth(): void {
     const radiusX = this._baseRadius * this._widthRatio;
     const radiusY = this._baseRadius * this._heightRatio;
-    this.setMouthSize(radiusX, radiusY);
+    this.setMouthSize(radiusX, radiusY, this._rounding);
   }
 
   public createUI(): void {
@@ -220,11 +215,10 @@ export class EmojiAnimator {
 
     const panel = new StackPanel();
     panel.width = "240px";
-    panel.top = "10px";
     panel.left = "10px";
-    panel.paddingTop = "10px";
+    panel.paddingBottom = "20px";
     panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
     ui.addControl(panel);
 
     const createSlider = (
@@ -257,8 +251,9 @@ export class EmojiAnimator {
       });
     };
 
-    createSlider("Size", 0.1, 0.5, this._baseRadius, (v) => (this._baseRadius = v));
+    createSlider("Size", 0, 0.5, this._baseRadius, (v) => (this._baseRadius = v));
     createSlider("Width Ratio", 0, 1, this._widthRatio, (v) => (this._widthRatio = v));
     createSlider("Height Ratio", 0, 1, this._heightRatio, (v) => (this._heightRatio = v));
+    createSlider("Rounding", 0, 1, this._rounding, (v) => (this._rounding = v));
   }
 }
