@@ -22,7 +22,7 @@ export class EmojiAnimator {
   private _originalPositions: number[] | Float32Array = new Float32Array();
   private _mouthMesh!: Mesh;
 
-  public setMouthSize(radiusX: number, radiusY: number, rounding = 1, sideCurve = 0): void {
+  public setMouthSize(radiusX: number, radiusY: number): void {
     const innerDepth = 0.06;
     const basePos = this._originalPositions;
     const pos = [...basePos];
@@ -39,13 +39,15 @@ export class EmojiAnimator {
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
 
-      const px = radiusX * Math.sign(cos) * (Math.abs(cos) ** rounding);
-      const py = radiusY * Math.sign(sin) * (Math.abs(sin) ** rounding) + sideCurve * (px * cos - radiusX / 2);
+      const px = radiusX * Math.sign(cos) * (Math.abs(cos) ** this._rounding);
+      const py = radiusY * Math.sign(sin) * (Math.abs(sin) ** this._rounding) + this._sideCurve * (px * cos - radiusX / 2);
+      const pz = Math.sqrt(Math.max(0, sphereRadius ** 2 - px ** 2 - py ** 2));
 
       // Local elliptical radius at this angle
       const ellipseRadius = Math.sqrt(
         (px ** 2) +
-        (py ** 2)
+        (py ** 2) +
+        (pz ** 2)
       );
 
       // Inner and outer based on local ellipse
@@ -58,7 +60,6 @@ export class EmojiAnimator {
 
       if (dist < outerRadius) {
         // Elliptical projection (not circle)
-        const pz = Math.sqrt(Math.max(0, sphereRadius * sphereRadius - px * px - py * py));
         const ellipsePoint = new Vector3(px, py, pz);
 
         let final = v;
@@ -93,16 +94,9 @@ export class EmojiAnimator {
     this._mouthMesh = this.headMesh.clone("mouthShape", null)!;
     this._mouthMesh.setEnabled(false);
 
-    const pos = this._mouthMesh.getVerticesData("position")!;
-    const basePos = this.headMesh.getVerticesData("position")!;
-    const center = new Vector3(0, 0, 0.5);
-    const radius = 0.5;
-    const innerRadius = radius * 0.6;
-    const outerRadius = radius / 0.6;
     const innerDepth = 0.04;
-    const sphereRadius = 0.5;
 
-    this._originalPositions = basePos.slice(0); // clone
+    this._originalPositions = this.headMesh.getVerticesData("position")!.slice(0); // clone
 
     // === BLACK SPHERE (MOUTH) ===
     const mouthSphere = MeshBuilder.CreateSphere("mouthSphere", {
@@ -115,40 +109,7 @@ export class EmojiAnimator {
     mouthSphere.material = blackMat;
     mouthSphere.parent = this.headMesh; // optionally attach to head for sync
 
-    for (let i = 0; i < basePos.length; i += 3) {
-      const vx = basePos[i];
-      const vy = basePos[i + 1];
-      const vz = basePos[i + 2];
-
-      const v = new Vector3(vx, vy, vz);
-      const toCenter = v.subtract(center);
-      const dist = toCenter.length();
-
-      if (dist < outerRadius) {
-        const angle = Math.atan2(toCenter.y, toCenter.x);
-
-        // Clean circular projection (ONLY for inner/mid zone)
-        const px = center.x + innerRadius * Math.cos(angle);
-        const py = center.y + innerRadius * Math.sin(angle);
-        const pz = Math.sqrt(Math.max(0, sphereRadius * sphereRadius - px * px - py * py));
-        const circlePoint = new Vector3(px, py, pz);
-
-        let final = v;
-
-        if (dist < radius) {
-          // Apply inward deformation using circlePoint as anchor
-          const t = (radius - dist) / (radius - innerRadius); // 0 → 1
-          const inward = v.normalize().scale(-innerDepth * t * t); // optional easing
-          final = circlePoint.add(inward);
-        }
-
-        pos[i] = final.x;
-        pos[i + 1] = final.y;
-        pos[i + 2] = final.z;
-      }
-    }
-    
-    this._mouthMesh.setVerticesData("position", pos);
+    this.updateMouth();
 
     // === EYES ===
     const eyeMat = new StandardMaterial("eyeMat", this.scene);
@@ -207,7 +168,7 @@ export class EmojiAnimator {
   public updateMouth(): void {
     const radiusX = this._baseRadius * this._widthRatio;
     const radiusY = this._baseRadius * this._heightRatio;
-    this.setMouthSize(radiusX, radiusY, this._rounding, this._sideCurve);
+    this.setMouthSize(radiusX, radiusY);
   }
 
   public createUI(): void {
