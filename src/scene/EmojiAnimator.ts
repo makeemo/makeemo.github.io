@@ -52,7 +52,11 @@ export class EmojiAnimator {
 
       // Inner and outer based on local ellipse
       const innerRadius = ellipseRadius * 0.6;
-      const outerRadius = ellipseRadius / 0.6;
+      //const outerRadius = ellipseRadius / 0.6;
+      const outerRadius = Math.sqrt(
+        (px ** 2) +
+        (py ** 2)
+      ) / 0.6;
 
       const v = new Vector3(vx, vy, vz);
       const toCenter = v.subtract(center);
@@ -65,8 +69,10 @@ export class EmojiAnimator {
         let final = v;
 
         if (dist < ellipseRadius) {
-          const t = (ellipseRadius - dist) / (ellipseRadius - innerRadius);
-          const depth = innerDepth * t * t;
+          const tRaw = (ellipseRadius - dist) / (ellipseRadius - innerRadius);
+          const t = Math.max(0, Math.min(1, tRaw)); // clamp to [0,1]
+          const eased = t * t * (3 - 2 * t); // smoothstep easing
+          const depth = innerDepth * eased;
           final = ellipsePoint.add(v.normalize().scale(-depth));
         }
 
@@ -94,7 +100,7 @@ export class EmojiAnimator {
     this._mouthMesh = this.headMesh.clone("mouthShape", null)!;
     this._mouthMesh.setEnabled(false);
 
-    const innerDepth = 0.04;
+    const innerDepth = 0.015;
 
     this._originalPositions = this.headMesh.getVerticesData("position")!.slice(0); // clone
 
