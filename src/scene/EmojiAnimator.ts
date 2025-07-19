@@ -26,7 +26,6 @@ export class EmojiAnimator {
     const innerDepth = 0.06;
     const basePos = this._originalPositions;
     const pos = [...basePos];
-    const center = new Vector3(0, 0, 0.5);
     const sphereRadius = 0.5;
 
     for (let i = 0; i < basePos.length; i += 3) {
@@ -34,46 +33,56 @@ export class EmojiAnimator {
       const vy = basePos[i + 1];
       const vz = basePos[i + 2];
 
-      const angle = Math.atan2(vy, vx);
+      const maxRadius = Math.max(radiusX, radiusY);
 
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
+      const zAngle = Math.acos(vz / sphereRadius);
 
-      const px = radiusX * Math.sign(cos) * (Math.abs(cos) ** this._rounding);
-      const py = radiusY * Math.sign(sin) * (Math.abs(sin) ** this._rounding) + this._sideCurve * (px * cos - radiusX / 2);
-      const pz = Math.sqrt(Math.max(0, sphereRadius ** 2 - px ** 2 - py ** 2));
+      const z0 = Math.sqrt(sphereRadius ** 2 - maxRadius ** 2);
+      const z0Angle = Math.acos(z0 / sphereRadius);
 
-      // Local elliptical radius at this angle
-      const ellipseRadius = Math.sqrt(
-        (px ** 2) +
-        (py ** 2) +
-        (pz ** 2)
-      );
+      const outerAngle = z0Angle * 1.6;
 
-      // Inner and outer based on local ellipse
-      const innerRadius = ellipseRadius * 0.6;
-      //const outerRadius = ellipseRadius / 0.6;
-      const outerRadius = Math.sqrt(
-        (px ** 2) +
-        (py ** 2)
-      ) / 0.6;
+      const centerAngle = outerAngle * 0.8;
+      const innerAngle = centerAngle * 0.8;
 
-      const v = new Vector3(vx, vy, vz);
-      const toCenter = v.subtract(center);
-      const dist = toCenter.length();
+      if (zAngle < outerAngle && vz > 0) {
 
-      if (dist < outerRadius) {
+        let rounding = this._rounding;
+        let sideCurve = this._sideCurve;
+        let radiusXScaled = radiusX;
+        let radiusYScaled = radiusY;
+
+        if (zAngle > centerAngle) {
+          let ratio = (zAngle - centerAngle) / (outerAngle - centerAngle);
+          let opoRatio = 1 - ratio;
+
+          rounding = (1 - rounding) * ratio + rounding;
+          sideCurve *= opoRatio;
+          radiusXScaled = (maxRadius - radiusX) * ratio + radiusX;
+          radiusYScaled = (maxRadius - radiusY) * ratio + radiusY;
+        }
+
+        const angle = Math.atan2(vy, vx);
+
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+
+        const px = radiusXScaled * Math.sign(cos) * (Math.abs(cos) ** rounding);
+        const py = radiusYScaled * Math.sign(sin) * (Math.abs(sin) ** rounding) + sideCurve * (px * cos - radiusXScaled / 2);
+
+        const pz = Math.sqrt(Math.max(0, sphereRadius ** 2 - px ** 2 - py ** 2));
         // Elliptical projection (not circle)
         const ellipsePoint = new Vector3(px, py, pz);
 
-        let final = v;
+        let final = ellipsePoint;
 
-        if (dist < ellipseRadius) {
-          const tRaw = (ellipseRadius - dist) / (ellipseRadius - innerRadius);
+        if (zAngle < innerAngle) {
+          const tRaw = (innerAngle - zAngle);
           const t = Math.max(0, Math.min(1, tRaw)); // clamp to [0,1]
           const eased = t * t * (3 - 2 * t); // smoothstep easing
           const depth = innerDepth * eased;
-          final = ellipsePoint.add(v.normalize().scale(-depth));
+          const v = new Vector3(vx, vy, vz);
+          final = ellipsePoint.add(v.normalize().scale(-depth)).scale(0.9);
         }
 
         pos[i] = final.x;
@@ -100,7 +109,7 @@ export class EmojiAnimator {
     this._mouthMesh = this.headMesh.clone("mouthShape", null)!;
     this._mouthMesh.setEnabled(false);
 
-    const innerDepth = 0.015;
+    const innerDepth = 0.01;
 
     this._originalPositions = this.headMesh.getVerticesData("position")!.slice(0); // clone
 
