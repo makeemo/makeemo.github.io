@@ -6,6 +6,8 @@ import {
   Color3,
   MeshBuilder,
   StandardMaterial,
+  NodeMaterial,
+  InputBlock,
 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Control, Slider, StackPanel, TextBlock } from "@babylonjs/gui";
 
@@ -18,6 +20,8 @@ export class EmojiAnimator {
   private _heightRatio = 1;
   private _rounding = 1;
   private _sideCurve = 0;
+  private _topTeethEdge! : InputBlock;
+  private _bottomTeethEdge! : InputBlock;
 
   private _originalPositions: number[] | Float32Array = new Float32Array();
   private _mouthMesh!: Mesh;
@@ -119,10 +123,11 @@ export class EmojiAnimator {
       segments: 32,
     }, this.scene);
 
-    const blackMat = new StandardMaterial("blackMat", this.scene);
-    blackMat.diffuseColor = Color3.Black();
-    mouthSphere.material = blackMat;
+    const nodeMat = await NodeMaterial.ParseFromSnippetAsync("#4YB2LI#3", this.scene);
+    mouthSphere.material = nodeMat;
     mouthSphere.parent = this.headMesh; // optionally attach to head for sync
+    this._topTeethEdge = nodeMat.getBlockByName("TopEdge") as InputBlock;
+    this._bottomTeethEdge = nodeMat.getBlockByName("BottomEdge") as InputBlock;
 
     this.updateMouth();
 
@@ -232,5 +237,7 @@ export class EmojiAnimator {
     createSlider("Height Ratio", 0, 1, this._heightRatio, (v) => (this._heightRatio = v));
     createSlider("Rounding", 0, 1, this._rounding, (v) => (this._rounding = v));
     createSlider("Side Curve", -0.5, 0.5, this._sideCurve, (v) => (this._sideCurve = v));
+    createSlider("Top Teeth Edge", -0.5, 0.5, this._topTeethEdge.value, (v) => (this._topTeethEdge.value = v));
+    createSlider("Bottom Teeth Edge", -0.5, 0.5, this._bottomTeethEdge.value, (v) => (this._bottomTeethEdge.value = v));
   }
 }
