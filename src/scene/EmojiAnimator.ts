@@ -20,26 +20,26 @@ export class EmojiAnimator {
   private _rightSclera!: Mesh;
 
   private _scleraSize = 0;
-  private _pupilSize = 0.1;
-  private _baseRadius = 0.3;
+  private _baseRadius = 3;
   private _widthRatio = 1;
   private _heightRatio = 0.5;
   private _rounding = 1;
   private _sideCurve = 0.25;
-  private _topTeethEdge! : InputBlock;
-  private _bottomTeethEdge! : InputBlock;
-  private _hearthness! : InputBlock;
+  private _topTeethEdge!: InputBlock;
+  private _bottomTeethEdge!: InputBlock;
+  private _hearthness!: InputBlock;
+  private _pupilSize!: InputBlock;
 
-  private _leftEyeBasePosition = new Vector3(-0.2, 0.3, 0.28);
+  private _leftEyeBasePosition = new Vector3(-2, 3, 2.8);
   private _rightEyeBasePosition = new Vector3(-this._leftEyeBasePosition.x, this._leftEyeBasePosition.y, this._leftEyeBasePosition.z);
 
   private _originalPositions: number[] | Float32Array = new Float32Array();
 
   public setMouthSize(radiusX: number, radiusY: number): void {
-    const innerDepth = 0.06;
+    const innerDepth = 0.6;
     const basePos = this._originalPositions;
     const pos = [...basePos];
-    const sphereRadius = 0.5;
+    const sphereRadius = 5;
 
     for (let i = 0; i < basePos.length; i += 3) {
       const vx = basePos[i];
@@ -112,7 +112,7 @@ export class EmojiAnimator {
 
   async loadEmoji(): Promise<void> {
     // === HEAD ===
-    this.headMesh = MeshBuilder.CreateSphere("emojiHead", { diameter: 1, segments: 32 }, this.scene);
+    this.headMesh = MeshBuilder.CreateSphere("emojiHead", { diameter: 10, segments: 64 }, this.scene);
 
     const yellowMat = new StandardMaterial("emojiMat", this.scene);
     yellowMat.diffuseColor = Color3.Yellow();
@@ -122,17 +122,17 @@ export class EmojiAnimator {
     this._mouthMesh = this.headMesh.clone("mouthShape", null)!;
     this._mouthMesh.setEnabled(false);
 
-    const innerDepth = 0.01;
+    const innerDepth = 0.1;
 
     this._originalPositions = this.headMesh.getVerticesData("position")!.slice(0); // clone
 
     // === BLACK SPHERE (MOUTH) ===
     const mouthSphere = MeshBuilder.CreateSphere("mouthSphere", {
-      diameter: 1 - Math.sqrt(innerDepth), // slightly smaller than head
+      diameter: 10 - Math.sqrt(innerDepth), // slightly smaller than head
       segments: 32,
     }, this.scene);
 
-    const teethMat = await NodeMaterial.ParseFromSnippetAsync("#4YB2LI#3", this.scene);
+    const teethMat = await NodeMaterial.ParseFromSnippetAsync("#4YB2LI#4", this.scene);
     mouthSphere.material = teethMat;
     mouthSphere.parent = this.headMesh; // optionally attach to head for sync
     this._topTeethEdge = teethMat.getBlockByName("TopEdge") as InputBlock;
@@ -142,8 +142,9 @@ export class EmojiAnimator {
     const scleraMat = new StandardMaterial("eyeMat", this.scene);
     scleraMat.diffuseColor = Color3.White();
 
-    const pupilMat = await NodeMaterial.ParseFromSnippetAsync("#DNAMJI#6", this.scene);
+    const pupilMat = await NodeMaterial.ParseFromSnippetAsync("#DNAMJI#23", this.scene);
     this._hearthness = pupilMat.getBlockByName("Hearthness") as InputBlock;
+    this._pupilSize = pupilMat.getBlockByName("Size") as InputBlock;
 
     const baseSclera = MeshBuilder.CreateSphere("sclera", { diameter: 1 }, this.scene);
     baseSclera.material = scleraMat;
@@ -218,15 +219,16 @@ export class EmojiAnimator {
   }
 
   public updateEyes(): void {
+    const pupilSize = 0.97 + 0.01 * this._pupilSize.value as number;
     const scleraSizeVector = new Vector3(this._scleraSize, this._scleraSize, this._scleraSize);
-    const pupilSizeVector = new Vector3(this._pupilSize, this._pupilSize, this._pupilSize);
+    const pupilSizeVector = new Vector3(pupilSize, pupilSize, pupilSize);
 
     this._leftSclera.scaling = scleraSizeVector;
     this._rightSclera.scaling = scleraSizeVector;
     this._leftPupil.scaling = pupilSizeVector;
     this._rightPupil.scaling = pupilSizeVector;
 
-    const limitedHalfScleraSize = Math.max(0.5 * this._scleraSize, 0.05 + 0.12 * this._pupilSize); // distance from center to surface
+    const limitedHalfScleraSize = Math.max(0.5 * this._scleraSize, 0.4 + 0.4 * pupilSize); // distance from center to surface
     const angle = this._leftPupil.rotation.x; // assuming rotation.x is in radians
 
     const normalYZ = new Vector3(
@@ -292,16 +294,16 @@ export class EmojiAnimator {
       });
     };
 
-    createSlider("Sclera Size", 0, 0.2, this._scleraSize, (v) => (this._scleraSize = v));
-    createSlider("Pupil Size", 0, 0.2, this._pupilSize, (v) => (this._pupilSize = v));
+    createSlider("Sclera Size", 0, 2, this._scleraSize, (v) => (this._scleraSize = v));
+    createSlider("Pupil Size", 0, 2, this._pupilSize.value, (v) => (this._pupilSize.value = v));
     createSlider("Hearthness", 0, 1, this._hearthness.value, (v) => (this._hearthness.value = v));
 
-    createSlider("Mouth Size", 0, 0.5, this._baseRadius, (v) => (this._baseRadius = v));
+    createSlider("Mouth Size", 0, 5, this._baseRadius, (v) => (this._baseRadius = v));
     createSlider("Width Ratio", 0, 1, this._widthRatio, (v) => (this._widthRatio = v));
     createSlider("Height Ratio", 0, 1, this._heightRatio, (v) => (this._heightRatio = v));
     createSlider("Rounding", 0, 1, this._rounding, (v) => (this._rounding = v));
     createSlider("Side Curve", -0.5, 0.5, this._sideCurve, (v) => (this._sideCurve = v));
-    createSlider("Top Teeth Edge", -0.5, 0.5, this._topTeethEdge.value, (v) => (this._topTeethEdge.value = v));
-    createSlider("Bottom Teeth Edge", -0.5, 0.5, this._bottomTeethEdge.value, (v) => (this._bottomTeethEdge.value = v));
+    createSlider("Top Teeth Edge", -5, 5, this._topTeethEdge.value, (v) => (this._topTeethEdge.value = v));
+    createSlider("Bottom Teeth Edge", -5, 5, this._bottomTeethEdge.value, (v) => (this._bottomTeethEdge.value = v));
   }
 }
