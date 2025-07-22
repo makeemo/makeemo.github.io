@@ -28,6 +28,7 @@ export class EmojiAnimator {
   private _sideCurve = 0.25;
   private _topTeethEdge! : InputBlock;
   private _bottomTeethEdge! : InputBlock;
+  private _hearthness! : InputBlock;
 
   private _leftEyeBasePosition = new Vector3(-0.2, 0.3, 0.28);
   private _rightEyeBasePosition = new Vector3(-this._leftEyeBasePosition.x, this._leftEyeBasePosition.y, this._leftEyeBasePosition.z);
@@ -131,18 +132,18 @@ export class EmojiAnimator {
       segments: 32,
     }, this.scene);
 
-    const nodeMat = await NodeMaterial.ParseFromSnippetAsync("#4YB2LI#3", this.scene);
-    mouthSphere.material = nodeMat;
+    const teethMat = await NodeMaterial.ParseFromSnippetAsync("#4YB2LI#3", this.scene);
+    mouthSphere.material = teethMat;
     mouthSphere.parent = this.headMesh; // optionally attach to head for sync
-    this._topTeethEdge = nodeMat.getBlockByName("TopEdge") as InputBlock;
-    this._bottomTeethEdge = nodeMat.getBlockByName("BottomEdge") as InputBlock;
+    this._topTeethEdge = teethMat.getBlockByName("TopEdge") as InputBlock;
+    this._bottomTeethEdge = teethMat.getBlockByName("BottomEdge") as InputBlock;
 
     // === EYES ===
     const scleraMat = new StandardMaterial("eyeMat", this.scene);
     scleraMat.diffuseColor = Color3.White();
 
-    const pupilMat = new StandardMaterial("eyeMat", this.scene);
-    pupilMat.diffuseColor = Color3.Black();
+    const pupilMat = await NodeMaterial.ParseFromSnippetAsync("#DNAMJI#6", this.scene);
+    this._hearthness = pupilMat.getBlockByName("Hearthness") as InputBlock;
 
     const baseSclera = MeshBuilder.CreateSphere("sclera", { diameter: 1 }, this.scene);
     baseSclera.material = scleraMat;
@@ -225,7 +226,7 @@ export class EmojiAnimator {
     this._leftPupil.scaling = pupilSizeVector;
     this._rightPupil.scaling = pupilSizeVector;
 
-    const limitedHalfScleraSize = Math.max(0.5 * this._scleraSize, 0.06); // distance from center to surface
+    const limitedHalfScleraSize = Math.max(0.5 * this._scleraSize, 0.05 + 0.12 * this._pupilSize); // distance from center to surface
     const angle = this._leftPupil.rotation.x; // assuming rotation.x is in radians
 
     const normalYZ = new Vector3(
@@ -293,6 +294,7 @@ export class EmojiAnimator {
 
     createSlider("Sclera Size", 0, 0.2, this._scleraSize, (v) => (this._scleraSize = v));
     createSlider("Pupil Size", 0, 0.2, this._pupilSize, (v) => (this._pupilSize = v));
+    createSlider("Hearthness", 0, 1, this._hearthness.value, (v) => (this._hearthness.value = v));
 
     createSlider("Mouth Size", 0, 0.5, this._baseRadius, (v) => (this._baseRadius = v));
     createSlider("Width Ratio", 0, 1, this._widthRatio, (v) => (this._widthRatio = v));
