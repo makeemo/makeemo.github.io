@@ -29,6 +29,7 @@ export class EmojiAnimator {
   private _bottomTeethEdge!: InputBlock;
   private _hearthness!: InputBlock;
   private _pupilSize!: InputBlock;
+  private _pupilWidth!: InputBlock;
 
   private _leftEyeBasePosition = new Vector3(-2, 3, 2.8);
   private _rightEyeBasePosition = new Vector3(-this._leftEyeBasePosition.x, this._leftEyeBasePosition.y, this._leftEyeBasePosition.z);
@@ -142,9 +143,10 @@ export class EmojiAnimator {
     const scleraMat = new StandardMaterial("eyeMat", this.scene);
     scleraMat.diffuseColor = Color3.White();
 
-    const pupilMat = await NodeMaterial.ParseFromSnippetAsync("#DNAMJI#23", this.scene);
+    const pupilMat = await NodeMaterial.ParseFromSnippetAsync("#DNAMJI#24", this.scene);
     this._hearthness = pupilMat.getBlockByName("Hearthness") as InputBlock;
     this._pupilSize = pupilMat.getBlockByName("Size") as InputBlock;
+    this._pupilWidth = pupilMat.getBlockByName("xSize") as InputBlock;
 
     const baseSclera = MeshBuilder.CreateSphere("sclera", { diameter: 1 }, this.scene);
     baseSclera.material = scleraMat;
@@ -296,6 +298,7 @@ export class EmojiAnimator {
 
     createSlider("Sclera Size", 0, 2, this._scleraSize, (v) => (this._scleraSize = v));
     createSlider("Pupil Size", 0, 2, this._pupilSize.value, (v) => (this._pupilSize.value = v));
+    createSlider("Pupil Width", 0, 8, this._pupilWidth.value, (v) => (this._pupilWidth.value = v));
     createSlider("Hearthness", 0, 1, this._hearthness.value, (v) => (this._hearthness.value = v));
 
     createSlider("Mouth Size", 0, 5, this._baseRadius, (v) => (this._baseRadius = v));

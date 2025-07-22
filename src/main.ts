@@ -1,4 +1,4 @@
-import { Engine, Scene, ArcRotateCamera, HemisphericLight, Vector3, DirectionalLight } from "@babylonjs/core";
+import { Engine, Scene, ArcRotateCamera, HemisphericLight, Vector3 } from "@babylonjs/core";
 import { EmojiAnimator } from "./scene/EmojiAnimator";
 import { setupUI } from "./ui/Controls";
 
