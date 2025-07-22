@@ -47,11 +47,21 @@ export class EmojiAnimator {
       const vy = basePos[i + 1];
       const vz = basePos[i + 2];
 
+      const angle = Math.atan2(vy, vx);
+
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+
       const maxRadius = Math.max(radiusX, radiusY);
+      const ellipticalRadius = (radiusX * radiusY) / Math.sqrt(
+        (radiusY * cos) ** 2 + (radiusX * sin) ** 2
+      );
+
+      const avgRadius = (maxRadius + ellipticalRadius) / 2;
 
       const zAngle = Math.acos(vz / sphereRadius);
 
-      const z0 = Math.sqrt(sphereRadius ** 2 - maxRadius ** 2);
+      const z0 = Math.sqrt(sphereRadius ** 2 - avgRadius ** 2);
       const z0Angle = Math.acos(z0 / sphereRadius);
 
       const outerAngle = z0Angle * 1.6;
@@ -75,11 +85,6 @@ export class EmojiAnimator {
           radiusXScaled = (maxRadius - radiusX) * ratio + radiusX;
           radiusYScaled = (maxRadius - radiusY) * ratio + radiusY;
         }
-
-        const angle = Math.atan2(vy, vx);
-
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
 
         const px = radiusXScaled * Math.sign(cos) * (Math.abs(cos) ** rounding);
         const py = radiusYScaled * Math.sign(sin) * (Math.abs(sin) ** rounding) + sideCurve * (px * cos - radiusXScaled / 2);
