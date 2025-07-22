@@ -226,17 +226,20 @@ export class EmojiAnimator {
   }
 
   public updateEyes(): void {
+    this.updateEye(this._leftSclera, this._leftPupil, this._leftEyeBasePosition);
+    this.updateEye(this._rightSclera, this._rightPupil, this._rightEyeBasePosition);
+  }
+
+  private updateEye(sclera: Mesh, pupil: Mesh, basePosition: Vector3) {
     const pupilSize = 0.97 + 0.01 * this._pupilSize.value as number;
     const scleraSizeVector = new Vector3(this._scleraSize, this._scleraSize, this._scleraSize);
     const pupilSizeVector = new Vector3(pupilSize, pupilSize, pupilSize);
 
-    this._leftSclera.scaling = scleraSizeVector;
-    this._rightSclera.scaling = scleraSizeVector;
-    this._leftPupil.scaling = pupilSizeVector;
-    this._rightPupil.scaling = pupilSizeVector;
+    sclera.scaling = scleraSizeVector;
+    pupil.scaling = pupilSizeVector;
 
     const limitedHalfScleraSize = Math.max(0.5 * this._scleraSize, 0.4 + 0.4 * pupilSize); // distance from center to surface
-    const angle = this._leftPupil.rotation.x; // assuming rotation.x is in radians
+    const angle = pupil.rotation.x; // assuming rotation.x is in radians
 
     const normalYZ = new Vector3(
       0,
@@ -244,17 +247,7 @@ export class EmojiAnimator {
       Math.cos(angle)
     ).normalize();
 
-    this._leftPupil.position = this._leftEyeBasePosition.add(normalYZ.scale(limitedHalfScleraSize));
-
-    const rightAngle = this._rightPupil.rotation.x;
-
-    const rightNormalYZ = new Vector3(
-      0,
-      Math.sin(rightAngle),
-      Math.cos(rightAngle)
-    ).normalize();
-
-    this._rightPupil.position = this._rightEyeBasePosition.add(rightNormalYZ.scale(limitedHalfScleraSize));
+    pupil.position = basePosition.add(normalYZ.scale(limitedHalfScleraSize));
   }
 
   public createUI(): void {
