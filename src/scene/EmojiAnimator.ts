@@ -10,6 +10,7 @@ import {
   InputBlock,
 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Control, Slider, StackPanel, TextBlock } from "@babylonjs/gui";
+import { EmojiEyebrowTextureBuilder } from "./EmojiEyebrowTextureBuilder";
 
 export class EmojiAnimator {
   private headMesh!: Mesh;
@@ -70,7 +71,7 @@ export class EmojiAnimator {
       const innerAngle = centerAngle * 0.8;
 
       if (zAngle < outerAngle && vz > 0) {
-
+        /*** MOUTH CHECK */
         let rounding = this._rounding;
         let sideCurve = this._sideCurve;
         let radiusXScaled = radiusX;
@@ -107,6 +108,8 @@ export class EmojiAnimator {
         pos[i] = final.x;
         pos[i + 1] = final.y;
         pos[i + 2] = final.z;
+      } else {
+        /*** EYE CHECK */
       }
     }
 
@@ -119,9 +122,8 @@ export class EmojiAnimator {
   async loadEmoji(): Promise<void> {
     // === HEAD ===
     this.headMesh = MeshBuilder.CreateSphere("emojiHead", { diameter: 10, segments: 64 }, this.scene);
-
     const yellowMat = new StandardMaterial("emojiMat", this.scene);
-    yellowMat.diffuseColor = Color3.Yellow();
+    //yellowMat.diffuseColor = Color3.Yellow();
     this.headMesh.material = yellowMat;
 
     // Create morph target for "O" mouth
@@ -175,6 +177,9 @@ export class EmojiAnimator {
     this._rightPupil = basePupil.clone("Eye_R");
     this._rightPupil.position = this._rightEyeBasePosition.clone();
     this._rightPupil.lookAt(new Vector3(this._rightEyeBasePosition.x, this._rightEyeBasePosition.y / 2, 0));
+
+    const eyeBrowBuilder = new EmojiEyebrowTextureBuilder(this.scene, this.headMesh, this._leftPupil, this._rightPupil);
+    yellowMat.diffuseTexture = eyeBrowBuilder.createTextureWithEyebrows();
 
     this.updateEyes();
     this.updateMouth();
@@ -239,7 +244,7 @@ export class EmojiAnimator {
     pupil.scaling = pupilSizeVector;
 
     const limitedHalfScleraSize = Math.max(0.5 * this._scleraSize, 0.4 + 0.4 * pupilSize); // distance from center to surface
-    const angle = pupil.rotation.x; // assuming rotation.x is in radians
+    const angle = pupil.rotation.x;
 
     const normalYZ = new Vector3(
       0,
