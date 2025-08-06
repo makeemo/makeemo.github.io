@@ -8,10 +8,8 @@ import {
   StandardMaterial,
   NodeMaterial,
   InputBlock,
-  Vector2,
 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Control, Slider, StackPanel, TextBlock } from "@babylonjs/gui";
-import { EmojiEyebrowTextureBuilder } from "./EmojiEyebrowTextureBuilder";
 
 export class EmojiAnimator {
   private headMesh!: Mesh;
@@ -111,66 +109,6 @@ export class EmojiAnimator {
           pos[i] = final.x;
           pos[i + 1] = final.y;
           pos[i + 2] = final.z;
-        } else {
-          /*** EYE CHECK */
-          let eyePositions = [ this._leftSclera.position.clone(), this._rightSclera.position.clone() ];
-          eyePositions[0].y += 0.2;
-          eyePositions[1].y += 0.2;
-
-          for (let eyePos of eyePositions) {
-            //let distance = Vector3.Distance(v, eyePos);
-            let distance = Vector2.Distance(new Vector2(vx, vy), new Vector2(eyePos.x, eyePos.y));
-            let eyeRadiusX = 0.6;
-            let eyeRadiusY = 0.4;
-            
-            /*const eyeAngle = Math.atan2(vy - eyePos.y, vx - eyePos.x);
-
-            const eyeCos = Math.cos(eyeAngle);
-            const eyeSin = Math.sin(eyeAngle);*/
-
-            const eyeSin = (vy - eyePos.y) / distance;
-            const eyeCos = (vx - eyePos.x) / distance;
-
-            const eyeRadius = (eyeRadiusX * eyeRadiusY) / Math.sqrt(
-              (eyeRadiusY * eyeCos) ** 2 + (eyeRadiusX * eyeSin) ** 2
-            );
-
-            let outerDist = 2.4;
-            //let centerDist = outerDist;
-            //let innerDist = outerDist;
-            let centerDist = 2.2;
-            let innerDist = 1.9;
-
-            let radiusXScaled = eyeRadiusX;
-            let radiusYScaled = eyeRadiusY;
-
-            if (distance < outerDist * eyeRadius /*&& vy > 2.7*/) {
-              if (distance < innerDist * eyeRadius) {
-                radiusXScaled *= innerDist / outerDist;
-                radiusYScaled *= innerDist / outerDist;
-              } else if (distance < centerDist * eyeRadius) {
-                radiusXScaled *= centerDist / outerDist;
-                radiusYScaled *= centerDist / outerDist;
-              }
-
-              const px = eyePos.x + radiusXScaled * Math.sign(eyeCos) * (Math.abs(eyeCos)/* ** rounding*/);
-              const py = eyePos.y + radiusYScaled * Math.sign(eyeSin) * (Math.abs(eyeSin)/* ** rounding*/) /*+ sideCurve * (px * cos - radiusXScaled / 2)*/;
-
-              const pz = Math.sqrt(Math.max(0, sphereRadius ** 2 - px ** 2 - py ** 2));
-              // Elliptical projection (not circle)
-              const ellipsePoint = new Vector3(px, py, pz);
-              
-              let final = ellipsePoint;
-
-              if (distance < innerDist * eyeRadius) {
-                final.scaleInPlace(0.8);
-              }
-
-              pos[i] = final.x;
-              pos[i + 1] = final.y;
-              pos[i + 2] = final.z;
-            }
-          }
         }
       }
     }
@@ -208,9 +146,9 @@ export class EmojiAnimator {
     this._topTeethEdge = teethMat.getBlockByName("TopEdge") as InputBlock;
     this._bottomTeethEdge = teethMat.getBlockByName("BottomEdge") as InputBlock;
 
-    const redMat = new StandardMaterial("emojiMat", this.scene);
+    /*const redMat = new StandardMaterial("emojiMat", this.scene);
     redMat.diffuseColor = Color3.Red();
-    mouthSphere.material = redMat;
+    mouthSphere.material = redMat;*/
 
     // === EYES ===
     const scleraMat = new StandardMaterial("eyeMat", this.scene);
@@ -309,7 +247,7 @@ export class EmojiAnimator {
     sclera.scaling = scleraSizeVector;
     pupil.scaling = pupilSizeVector;
 
-    const limitedHalfScleraSize = Math.max(0.5 * this._scleraSize, 0.1 + 0.4 * pupilSize); // distance from center to surface
+    const limitedHalfScleraSize = Math.max(0.5 * this._scleraSize, 0.2 + 0.6 * pupilSize); // distance from center to surface
     const angle = pupil.rotation.x;
 
     const normalYZ = new Vector3(

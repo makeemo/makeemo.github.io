@@ -3,8 +3,6 @@ import {
   Mesh,
   Vector3,
   DynamicTexture,
-  StandardMaterial,
-  Color3,
 } from "@babylonjs/core";
 
 export class EmojiEyebrowTextureBuilder {
