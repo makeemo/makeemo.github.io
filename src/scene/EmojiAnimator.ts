@@ -18,6 +18,8 @@ export class EmojiAnimator {
   private _leftSclera!: Mesh;
   private _rightPupil!: Mesh;
   private _rightSclera!: Mesh;
+  private _leftBrow!: Mesh;
+  private _rightBrow!: Mesh;
 
   private _scleraSize = 0;
   private _baseRadius = 3;
@@ -25,6 +27,9 @@ export class EmojiAnimator {
   private _heightRatio = 0.5;
   private _rounding = 1;
   private _sideCurve = 0.25;
+  private _browSize = 1;
+  private _browWidth = 1;
+  private _browRotation = 0;
   private _topTeethEdge!: InputBlock;
   private _bottomTeethEdge!: InputBlock;
   private _hearthness!: InputBlock;
@@ -33,6 +38,9 @@ export class EmojiAnimator {
 
   private _leftEyeBasePosition = new Vector3(-2, 3, 2.8);
   private _rightEyeBasePosition = new Vector3(-this._leftEyeBasePosition.x, this._leftEyeBasePosition.y, this._leftEyeBasePosition.z);
+
+  private _leftBrowBasePosition = new Vector3(-2, 4, 3);
+  private _rightBrowBasePosition = new Vector3(-this._leftBrowBasePosition.x, this._leftBrowBasePosition.y, this._leftBrowBasePosition.z);
 
   private _originalPositions: number[] | Float32Array = new Float32Array();
 
@@ -159,12 +167,17 @@ export class EmojiAnimator {
     this._pupilSize = pupilMat.getBlockByName("Size") as InputBlock;
     this._pupilWidth = pupilMat.getBlockByName("xSize") as InputBlock;
 
+    const browMat = new StandardMaterial("eyeMat", this.scene);
+    browMat.diffuseColor = Color3.Black();
+
     const baseSclera = MeshBuilder.CreateSphere("sclera", { diameter: 1 }, this.scene);
     baseSclera.material = scleraMat;
 
     const basePupil = MeshBuilder.CreateSphere("pupil", { diameterX: 1, diameterY: 1, diameterZ: 0.5 }, this.scene);
     basePupil.material = pupilMat;
-    //basePupil.parent = baseSclera;
+
+    const baseBrow = MeshBuilder.CreateSphere("brow", { diameterX: 2, diameterY: 0.5, diameterZ: 0.5 }, this.scene);
+    baseBrow.material = browMat;
 
     this._leftSclera = baseSclera;
     this._leftSclera.name = "Sclera_L";
@@ -175,18 +188,26 @@ export class EmojiAnimator {
     this._leftPupil.position = this._leftEyeBasePosition.clone();
     this._leftPupil.lookAt(new Vector3(this._leftEyeBasePosition.x, this._leftEyeBasePosition.y / 2, 0));
 
-    this._rightSclera = baseSclera.clone("Eye_R");
+    this._rightSclera = baseSclera.clone("Sclera_R");
     this._rightSclera.position = this._rightEyeBasePosition.clone();
 
-    this._rightPupil = basePupil.clone("Eye_R");
+    this._rightPupil = basePupil.clone("Pupil_R");
     this._rightPupil.position = this._rightEyeBasePosition.clone();
     this._rightPupil.lookAt(new Vector3(this._rightEyeBasePosition.x, this._rightEyeBasePosition.y / 2, 0));
+
+    this._leftBrow = baseBrow;
+    this._leftBrow.name = "Brow_L";
+    this._leftBrow.position = this._leftBrowBasePosition.clone();
+    this._leftBrow.lookAt(new Vector3(this._leftBrowBasePosition.x, this._leftBrowBasePosition.y / 2, 0));
+
+    this._rightBrow = baseBrow.clone("Brow_R");
+    this._rightBrow.position = this._rightBrowBasePosition.clone();
+    this._rightBrow.lookAt(new Vector3(this._rightBrowBasePosition.x, this._rightBrowBasePosition.y / 2, 0));
 
     //const eyeBrowBuilder = new EmojiEyebrowTextureBuilder(this.scene, this.headMesh, this._leftPupil, this._rightPupil);
     //yellowMat.diffuseTexture = eyeBrowBuilder.createTextureWithEyebrows();
 
-    this.updateEyes();
-    this.updateMouth();
+    this.update();
 
     this.createUI();
   }
@@ -228,15 +249,31 @@ export class EmojiAnimator {
     return frames;
   }
 
-  public updateMouth(): void {
+  private updateMouth(): void {
     const radiusX = this._baseRadius * this._widthRatio;
     const radiusY = this._baseRadius * this._heightRatio;
     this.setMouthSize(radiusX, radiusY);
   }
 
-  public updateEyes(): void {
+  private updateEyes(): void {
     this.updateEye(this._leftSclera, this._leftPupil, this._leftEyeBasePosition);
     this.updateEye(this._rightSclera, this._rightPupil, this._rightEyeBasePosition);
+  }
+
+  private updateBrows(): void {
+    const browSizeVector = new Vector3(this._browSize * this._browWidth, this._browSize, this._browSize);
+
+    this._leftBrow.scaling = browSizeVector;
+    this._rightBrow.scaling = browSizeVector;
+
+    this._leftBrow.rotation.z = -this._browRotation;
+    this._rightBrow.rotation.z = this._browRotation;
+  }
+
+  public update(): void {
+    this.updateEyes();
+    this.updateMouth();
+    this.updateBrows();
   }
 
   private updateEye(sclera: Mesh, pupil: Mesh, basePosition: Vector3) {
@@ -298,10 +335,13 @@ export class EmojiAnimator {
 
         onChange(value);
 
-        this.updateEyes();
-        this.updateMouth();
+        this.update();
       });
     };
+
+    createSlider("Brow Size", 0, 2, this._browSize, (v) => (this._browSize = v));
+    createSlider("Brow Width", 0, 2, this._browWidth, (v) => (this._browWidth = v));
+    createSlider("Brow Rotation", -Math.PI, Math.PI, this._browRotation, (v) => (this._browRotation = v));
 
     createSlider("Sclera Size", 0, 2, this._scleraSize, (v) => (this._scleraSize = v));
     createSlider("Pupil Size", 0, 2, this._pupilSize.value, (v) => (this._pupilSize.value = v));
